@@ -14,8 +14,8 @@
 /coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
 /build
@@ -42,3 +42,5 @@ next-env.d.ts
 
 # imagesフォルダの無視 (publicディレクトリ配下)
 public/images
+
+node_modules/
