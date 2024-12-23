@@ -1,11 +1,14 @@
 # ファイルを特定の言語として扱う
 *.tsx linguist-language=TypeScript
+*.ts linguist-language=TypeScript
+*.js linguist-language=JavaScript
 
 # 特定のファイルを統計から除外する
-# *.min.js linguist-vendored=true
+public/* linguist-vendored=true
 
 # ドキュメントファイルとして扱う
-# *.md linguist-documentation=true
+*.md linguist-documentation=true
+*.json linguist-documentation=true
 
 # 特定のファイルを明示的に検出対象外にする
 # *.json linguist-detectable=false
