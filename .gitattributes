@@ -11,4 +11,4 @@ public/* linguist-vendored=true
 *.json linguist-documentation=true
 
 # 特定のファイルを明示的に検出対象外にする
-# *.json linguist-detectable=false
+app.py linguist-detectable=false
