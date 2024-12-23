@@ -199,13 +199,13 @@ def chat():
                 if function_call.name == "get_room_temperature":
                     temp_data = get_room_temperature(room_id)
                     return jsonify({
-                        "response": f"{room_id}の温度は{temp_data['value']}°Cです。（時刻: {temp_data['timestamp']}）"
+                        "response": f"現在（{temp_data['timestamp']}）の、{room_id}の温度は{temp_data['value']}°Cです。"
                     })
 
                 elif function_call.name == "get_room_humidity":
                     humidity_data = get_room_humidity(room_id)
                     return jsonify({
-                        "response": f"{room_id}の湿度は{humidity_data['value']}%です。（時刻: {humidity_data['timestamp']}）"
+                        "response": f"現在（{humidity_data['timestamp']}）の、{room_id}の湿度は{humidity_data['value']}%です。"
                     })
 
             except Exception as e:
@@ -220,31 +220,31 @@ def chat():
         return jsonify({"response": "サーバーエラーが発生しました。ご確認ください。"}), 500
 
 def get_room_temperature(room_id):
-    # `room_id_temperature` 形式で取得
     key = f"{room_id}_temperature"
     room_data = data_storage.get(key, [])
     
     if room_data:
-        # 最新の温度データと時刻を取得
         latest_entry = room_data[-1]
+        # 時刻を整形
+        timestamp = datetime.fromisoformat(latest_entry["timestamp"]).strftime("%Y年%m月%d日 %H時%M分%S秒")
         return {
             "value": latest_entry["value"],
-            "timestamp": latest_entry["timestamp"]
+            "timestamp": timestamp
         }
     else:
         return {"value": "データがありません", "timestamp": None}
 
 def get_room_humidity(room_id):
-    # `room_id_humidity` 形式で取得
     key = f"{room_id}_humidity"
     room_data = data_storage.get(key, [])
     
     if room_data:
-        # 最新の湿度データと時刻を取得
         latest_entry = room_data[-1]
+        # 時刻を整形
+        timestamp = datetime.fromisoformat(latest_entry["timestamp"]).strftime("%Y年%m月%d日 %H時%M分%S秒")
         return {
             "value": latest_entry["value"],
-            "timestamp": latest_entry["timestamp"]
+            "timestamp": timestamp
         }
     else:
         return {"value": "データがありません", "timestamp": None}

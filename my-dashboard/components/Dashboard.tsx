@@ -12,8 +12,11 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  TimeScale
 } from 'chart.js'
+import { useOperationStore } from '@/store/operationStore'
+import 'chartjs-adapter-date-fns'
 
 ChartJS.register(
   CategoryScale,
@@ -22,7 +25,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  TimeScale
 )
 
 interface SensorData {
@@ -58,6 +62,7 @@ export default function Dashboard() {
     status1: "vacant",
     status2: "vacant"
   })
+  const { operationData, totalOperationRate, addOperationRate } = useOperationStore()
 
   // センサーデータを取得
   useEffect(() => {
@@ -146,6 +151,21 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
+  // 稼働率データを取得・計算
+  useEffect(() => {
+    const calculateOperationRate = () => {
+      const isRoom1Operating = deviceStatuses.status1 === "working" || deviceStatuses.status1 === "idling"
+      const isRoom2Operating = deviceStatuses.status2 === "working" || deviceStatuses.status2 === "idling"
+      const currentRate = ((isRoom1Operating ? 1 : 0) + (isRoom2Operating ? 1 : 0)) * 50
+  
+      addOperationRate(currentRate)
+    }
+  
+    calculateOperationRate()
+    const interval = setInterval(calculateOperationRate, 10000)
+    return () => clearInterval(interval)
+  }, [deviceStatuses, addOperationRate])
+
   const formatChartData = (data: SensorData[]) => ({
     labels: data.map(item => new Date(item.timestamp).toLocaleTimeString()),
     datasets: [{
@@ -177,9 +197,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100">
       {/* 左側エリア - ビルと部屋のレイアウト */}
-      <div className="w-1/2 p-8 border-r border-gray-300">
+      <div className="flex-grow overflow-y-auto p-8 border-r border-gray-300">
         <h2 className="text-2xl font-bold mb-4">Building Layout</h2>
         <div className="relative w-full h-64 bg-white border-2 border-gray-400 mb-8">
           {/* Building 1 - Contains Room 1 and Room 2 */}
@@ -270,7 +290,69 @@ export default function Dashboard() {
       </div>
 
       {/* 右側エリア - センサーデータ */}
-      <div className="w-1/2 p-8">
+      <div className="w-1/2 overflow-y-auto p-8">
+        <h1 className="text-3xl font-bold mb-8">Operation Rate Dashboard</h1>
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Total Operation Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-center">
+              {totalOperationRate.toFixed(1)}%
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Current Operation Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-2xl font-bold">
+                {operationData[operationData.length - 1]?.rate}%
+              </span>
+            </div>
+            <div className="h-[200px]">
+              <Line
+                data={{
+                  labels: operationData.map(d => d.timestamp), // Dateオブジェクトをそのまま使用
+                  datasets: [{
+                    label: 'Operation Rate',
+                    data: operationData.map(d => d.rate),
+                    fill: false,
+                    borderColor: 'rgba(75,192,192,1)',
+                    tension: 0.1
+                  }]
+                }}
+                options={{
+                  scales: {
+                    x: {
+                      type: 'time', // 'time'スケールに設定
+                      time: {
+                        unit: 'second', // 秒単位で表示
+                        displayFormats: {
+                          second: 'HH:mm:ss' // 10:23:22 形式で表示
+                        }
+                      },
+                      title: {
+                        display: true,
+                        text: 'Time'
+                      }
+                    },
+                    y: {
+                      beginAtZero: true,
+                      max: 100,
+                      title: {
+                        display: true,
+                        text: 'Operation Rate (%)'
+                      }
+                    }
+                  }
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
         <h1 className="text-3xl font-bold mb-8">IoT Sensor Dashboard</h1>
         <div className="grid grid-cols-1 gap-8">
           {["temperature", "humidity"].map((sensorType) => (

@@ -1,6 +1,7 @@
 "use client"
 
 import { FC, useState, useEffect } from "react"
+import Image from "next/image";
 
 interface EdgeDeviceProps {
   roomName: string
@@ -56,7 +57,7 @@ const EdgeDevice: FC<EdgeDeviceProps> = ({ roomName, deviceStatus, elapsedTime }
 
       {/* 画像と状態名の横並びエリア */}
       <div className="flex flex-row items-center space-x-4">
-        <img src={statusImages[deviceStatus]} alt={deviceStatus} className="w-32 h-32" />
+        <Image src={statusImages[deviceStatus]} alt={deviceStatus} className="w-32 h-32" />
         <h2 className="text-2xl font-bold">
           {deviceStatus.charAt(0).toUpperCase() + deviceStatus.slice(1)}
         </h2>

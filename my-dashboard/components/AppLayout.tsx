@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { ReactNode } from "react"
 import Sidebar from "./Sidebar"
 import Dashboard from "./Dashboard"
 import Chat from "./Chat"
@@ -11,7 +12,11 @@ interface Message {
   content: string
 }
 
-export default function AppLayout() {
+interface AppLayoutProps {
+  children?: ReactNode; // childrenを受け取るプロパティを追加
+}
+
+export default function AppLayout({ children }: AppLayoutProps) {
   const [activeView, setActiveView] = useState<'dashboard' | 'chat' | 'edge'>('dashboard')
   
   // Chatのメッセージと入力内容をAppLayoutで管理
@@ -19,34 +24,37 @@ export default function AppLayout() {
   const [input, setInput] = useState('')
 
   // 2つのEdgeDeviceの状態と経過時間を管理
-  const [deviceStatuses, setDeviceStatuses] = useState(['vacant', 'vacant'])
+  const [deviceStatuses, setDeviceStatuses] = useState<("vacant" | "working" | "idling")[]>(["vacant", "vacant"]);
   const [elapsedTimes, setElapsedTimes] = useState([0, 0])
   const [timersActive, setTimersActive] = useState([false, false])
 
   // デバイスの状態に基づいて各タイマーを更新
-  useEffect(() => {
-    const timers: NodeJS.Timeout[] = []
-
+  const updateTimers = useCallback(() => {
+    const timers: NodeJS.Timeout[] = [];
     deviceStatuses.forEach((_, index) => {
       if (timersActive[index]) {
         timers[index] = setInterval(() => {
-          setElapsedTimes(prevTimes => {
-            const newTimes = [...prevTimes]
-            newTimes[index] += 1
-            return newTimes
-          })
-        }, 1000)
+          setElapsedTimes((prevTimes) => {
+            const newTimes = [...prevTimes];
+            newTimes[index] += 1;
+            return newTimes;
+          });
+        }, 1000);
       } else {
-        setElapsedTimes(prevTimes => {
-          const newTimes = [...prevTimes]
-          newTimes[index] = 0
-          return newTimes
-        })
+        setElapsedTimes((prevTimes) => {
+          const newTimes = [...prevTimes];
+          newTimes[index] = 0;
+          return newTimes;
+        });
       }
-    })
-
-    return () => timers.forEach(timer => clearInterval(timer))
-  }, [timersActive])
+    });
+    return timers;
+  }, [deviceStatuses, timersActive]);
+  
+  useEffect(() => {
+    const timers = updateTimers();
+    return () => timers.forEach((timer) => clearInterval(timer));
+  }, [updateTimers]);
 
   // 2つのデバイスの状態を10秒ごとにバックエンドから取得
   useEffect(() => {
@@ -55,8 +63,15 @@ export default function AppLayout() {
         const response = await fetch('http://localhost:5000/device_status')
         const data = await response.json()
 
-        const newStatuses = [data.status_1, data.status_2]
-        const newTimersActive = newStatuses.map(status => status !== 'vacant')
+        const isValidStatus = (status: string): status is "vacant" | "working" | "idling" =>
+          ["vacant", "working", "idling"].includes(status);
+
+        const newStatuses: ("vacant" | "working" | "idling")[] = [
+          isValidStatus(data.status_1) ? data.status_1 : "vacant",
+          isValidStatus(data.status_2) ? data.status_2 : "vacant",
+        ];
+
+        const newTimersActive = newStatuses.map((status) => status !== "vacant");
 
         console.log("Fetched device statuses:", newStatuses)  // 状態の確認用ログ
         setDeviceStatuses(newStatuses)
@@ -117,6 +132,8 @@ export default function AppLayout() {
           />
         )}
       </div>
+      {/* 子要素はサイドバー以外の配置場所にレンダリングする */}
+      <div className="hidden">{children}</div>
     </div>
   )
 }
